@@ -370,29 +370,19 @@
       }
     }
 
+    async function getEth() {
+      return window.okxwallet || window.ethereum || window.rabby;
+    }
+
     async function connectWallet() {
-      const eth = window.ethereum || window.okxwallet || window.rabby;
+      const eth = await getEth();
       if (!eth) return setStatus("No wallet found. Please install MetaMask, OKX or Rabby.", "error");
       try {
         setStatus("Connecting wallet...", "info");
-        provider = new ethers.BrowserProvider(eth);
-        await provider.send("eth_requestAccounts", []);
+        await eth.request({ method: "eth_requestAccounts" });
 
-        const network = await provider.getNetwork();
-        const chainId = network.chainId;
-        if (chainId !== 5042002n && chainId !== 5039954n) {
-          // Try to switch automatically
-          try {
-            await eth.request({
-              method: "wallet_switchEthereumChain",
-              params: [{ chainId: ARC_CHAIN_ID }],
-            });
-          } catch {
-            setStatus("Please switch to Arc Testnet in your wallet.", "error");
-            return;
-          }
-        }
-
+        // Always create a fresh provider after connecting
+        provider = new ethers.BrowserProvider(eth, "any");
         signer = await provider.getSigner();
         contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
         usdcContract = new ethers.Contract(USDC_ADDRESS, USDC_ABI, signer);
