@@ -371,16 +371,26 @@
     }
 
     async function connectWallet() {
-      if (!window.ethereum) return setStatus("MetaMask not found. Please install it.", "error");
+      const eth = window.ethereum || window.okxwallet || window.rabby;
+      if (!eth) return setStatus("No wallet found. Please install MetaMask, OKX or Rabby.", "error");
       try {
         setStatus("Connecting wallet...", "info");
-        provider = new ethers.BrowserProvider(window.ethereum);
+        provider = new ethers.BrowserProvider(eth);
         await provider.send("eth_requestAccounts", []);
 
         const network = await provider.getNetwork();
-        if (network.chainId !== 5042002n) {
-          setStatus("Please switch to Arc Testnet in MetaMask.", "error");
-          return;
+        const chainId = network.chainId;
+        if (chainId !== 5042002n && chainId !== 5039954n) {
+          // Try to switch automatically
+          try {
+            await eth.request({
+              method: "wallet_switchEthereumChain",
+              params: [{ chainId: ARC_CHAIN_ID }],
+            });
+          } catch {
+            setStatus("Please switch to Arc Testnet in your wallet.", "error");
+            return;
+          }
         }
 
         signer = await provider.getSigner();
