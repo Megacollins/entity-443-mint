@@ -383,6 +383,10 @@
 
         // Always create a fresh provider after connecting
         provider = new ethers.BrowserProvider(eth, "any");
+        const network = await provider.getNetwork();
+        console.log("Connected chain ID:", network.chainId.toString());
+        setStatus(`Connected on chain ID: ${network.chainId}`, "info");
+
         signer = await provider.getSigner();
         contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
         usdcContract = new ethers.Contract(USDC_ADDRESS, USDC_ABI, signer);
